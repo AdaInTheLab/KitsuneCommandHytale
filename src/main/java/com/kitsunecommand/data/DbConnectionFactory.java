@@ -1,7 +1,7 @@
 package com.kitsunecommand.data;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.kitsunecommand.KitsunePlugin;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -9,6 +9,7 @@ import org.jdbi.v3.core.Jdbi;
 
 import javax.sql.DataSource;
 import java.nio.file.Path;
+import java.util.logging.Level;
 
 /**
  * Manages the HikariCP connection pool and JDBI instance for SQLite.
@@ -26,7 +27,7 @@ public class DbConnectionFactory {
         Path dbPath = plugin.getDataDirectory().resolve("kitsunecommand.db");
         String jdbcUrl = "jdbc:sqlite:" + dbPath.toAbsolutePath();
 
-        LOGGER.info("Initializing SQLite database at: {}", dbPath);
+        LOGGER.at(Level.INFO).log("Initializing SQLite database at: %s", dbPath);
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
@@ -44,7 +45,7 @@ public class DbConnectionFactory {
         this.dataSource = new HikariDataSource(config);
         this.jdbi = Jdbi.create(dataSource);
 
-        LOGGER.info("Database connection pool initialized (max={}, pool={})",
+        LOGGER.at(Level.INFO).log("Database connection pool initialized (max=%d, pool=%s)",
             config.getMaximumPoolSize(), config.getPoolName());
     }
 
@@ -59,7 +60,7 @@ public class DbConnectionFactory {
     public void close() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            LOGGER.info("Database connection pool closed.");
+            LOGGER.at(Level.INFO).log("Database connection pool closed.");
         }
     }
 }

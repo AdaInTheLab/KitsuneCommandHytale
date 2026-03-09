@@ -8,11 +8,20 @@ version = '1.0.0'
 
 repositories {
     mavenCentral()
+    maven {
+        name = 'hytale-release'
+        url = 'https://maven.hytale.com/release'
+    }
+    maven {
+        name = 'hytale-pre-release'
+        url = 'https://maven.hytale.com/pre-release'
+    }
 }
 
 dependencies {
-    // Hytale Server JAR (compileOnly — provided at runtime by the server)
-    compileOnly files('libs/HytaleServer.jar')
+    // Hytale Server API
+    compileOnly 'com.hypixel.hytale:Server:2026.02.19-1a311a592'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     // Dependency Injection
     implementation 'com.google.inject:guice:7.0.0'
@@ -51,7 +60,10 @@ tasks.named('test') {
 }
 
 shadowJar {
+    archiveBaseName.set('KitsuneCommand')
     archiveClassifier.set('')
+
+    // compileOnly deps (Hytale Server) are already excluded from shadow JAR
 
     // Relocate to avoid classpath conflicts with other plugins
     relocate 'com.google.inject', 'com.kitsunecommand.libs.guice'
@@ -64,6 +76,10 @@ shadowJar {
     relocate 'org.sqlite', 'com.kitsunecommand.libs.sqlite'
 }
 
+tasks.named('jar') {
+    enabled = false
+}
+
 tasks.named('build') {
     dependsOn shadowJar
 }
@@ -74,5 +90,13 @@ processResources {
             'version': project.version,
             'name': project.name
         )
+    }
+}
+
+tasks.register('deployToServer', Copy) {
+    from shadowJar
+    into 'server/mods'
+    doLast {
+        println "Deployed KitsuneCommand to server/mods/"
     }
 }

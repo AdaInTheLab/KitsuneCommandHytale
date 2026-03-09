@@ -1,17 +1,19 @@
 package com.kitsunecommand.commands;
 
 import com.google.inject.Inject;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
-import com.hypixel.hytale.server.core.entity.player.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.kitsunecommand.data.entities.PointsInfo;
 import com.kitsunecommand.data.repositories.PointsRepository;
 import com.kitsunecommand.features.economy.PointsFeature;
 
-import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * /points command — shows a player's points balance and leaderboard.
@@ -30,30 +32,30 @@ public class PointsCommand extends AbstractPlayerCommand {
         super("points", "kitsunecommand.commands.points.desc");
         this.pointsFeature = pointsFeature;
         this.pointsRepo = pointsRepo;
-        this.addAliases(new String[]{"pts", "balance", "bal"});
+        this.addAliases("pts", "balance", "bal");
+        this.setAllowsExtraArguments(true);
     }
 
     @Override
-    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        Player player = getPlayer(context);
-        String playerId = player.getUuid().toString();
-
-        // Check for "top" subcommand in extra args
-        String[] args = context.getRemainingArgs();
-        if (args != null && args.length > 0 && "top".equalsIgnoreCase(args[0])) {
-            return showLeaderboard(context);
+    protected void execute(CommandContext context,
+                           Store<EntityStore> store,
+                           Ref<EntityStore> ref,
+                           PlayerRef playerRef,
+                           World world) {
+        // Check for "top" subcommand in raw input
+        String input = context.getInputString();
+        if (input != null && input.toLowerCase().contains("top")) {
+            showLeaderboard(context);
+            return;
         }
 
         // Show player's balance
+        String playerId = playerRef.getUuid().toString();
         int balance = pointsFeature.getBalance(playerId);
-        context.getSender().sendMessage(
-            Message.raw("§6✦ Your Points: §f" + balance)
-        );
-
-        return CompletableFuture.completedFuture(null);
+        context.sendMessage(Message.raw("§6✦ Your Points: §f" + balance));
     }
 
-    private CompletableFuture<Void> showLeaderboard(CommandContext context) {
+    private void showLeaderboard(CommandContext context) {
         List<PointsInfo> top = pointsRepo.getLeaderboard(10);
 
         StringBuilder sb = new StringBuilder();
@@ -74,7 +76,6 @@ public class PointsCommand extends AbstractPlayerCommand {
                 .append(" pts\n");
         }
 
-        context.getSender().sendMessage(Message.raw(sb.toString().trim()));
-        return CompletableFuture.completedFuture(null);
+        context.sendMessage(Message.raw(sb.toString().trim()));
     }
 }

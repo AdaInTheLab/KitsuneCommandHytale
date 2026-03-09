@@ -1,11 +1,12 @@
 package com.kitsunecommand.data.repositories;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import org.jdbi.v3.core.Jdbi;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**

@@ -2,7 +2,7 @@ package com.kitsunecommand;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.kitsunecommand.commands.PointsCommand;
@@ -13,6 +13,7 @@ import com.kitsunecommand.core.ServiceModule;
 import com.kitsunecommand.data.DatabaseBootstrap;
 
 import javax.annotation.Nonnull;
+import java.util.logging.Level;
 
 /**
  * KitsuneCommand — Hytale Edition
@@ -35,8 +36,8 @@ public class KitsunePlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
-        LOGGER.info("=== KitsuneCommand Hytale Edition v1.0.0 ===");
-        LOGGER.info("Setting up...");
+        LOGGER.at(Level.INFO).log("=== KitsuneCommand Hytale Edition v1.0.0 ===");
+        LOGGER.at(Level.INFO).log("Setting up...");
 
         // Initialize Guice DI
         injector = Guice.createInjector(new ServiceModule(this));
@@ -57,7 +58,7 @@ public class KitsunePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(injector.getInstance(PointsCommand.class));
         getCommandRegistry().registerCommand(injector.getInstance(SignInCommand.class));
 
-        LOGGER.info("Setup complete — {} features registered", featureManager.getFeatureCount());
+        LOGGER.at(Level.INFO).log("Setup complete — %d features registered", featureManager.getFeatureCount());
     }
 
     @Override
@@ -65,14 +66,14 @@ public class KitsunePlugin extends JavaPlugin {
         // Start all features (safe to interact with other plugins now)
         featureManager.startAll();
 
-        LOGGER.info("KitsuneCommand is now running!");
-        LOGGER.info("  Data directory: {}", getDataDirectory());
-        LOGGER.info("  Features active: {}", featureManager.getEnabledCount());
+        LOGGER.at(Level.INFO).log("KitsuneCommand is now running!");
+        LOGGER.at(Level.INFO).log("  Data directory: %s", getDataDirectory());
+        LOGGER.at(Level.INFO).log("  Features active: %d", featureManager.getEnabledCount());
     }
 
     @Override
     protected void shutdown() {
-        LOGGER.info("KitsuneCommand shutting down...");
+        LOGGER.at(Level.INFO).log("KitsuneCommand shutting down...");
 
         // Shutdown features
         if (featureManager != null) {
@@ -85,7 +86,7 @@ public class KitsunePlugin extends JavaPlugin {
         }
 
         instance = null;
-        LOGGER.info("KitsuneCommand shutdown complete.");
+        LOGGER.at(Level.INFO).log("KitsuneCommand shutdown complete.");
     }
 
     // --- Public API ---

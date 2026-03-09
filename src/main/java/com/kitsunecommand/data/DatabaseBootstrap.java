@@ -1,13 +1,14 @@
 package com.kitsunecommand.data;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import org.jdbi.v3.core.Jdbi;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 /**
@@ -45,7 +46,7 @@ public class DatabaseBootstrap {
      * Initialize the database: create the version tracking table and run any pending migrations.
      */
     public void initialize() {
-        LOGGER.info("Running database migrations...");
+        LOGGER.at(Level.INFO).log("Running database migrations...");
 
         // Create the migration tracking table
         jdbi.useHandle(handle -> {
@@ -88,18 +89,18 @@ public class DatabaseBootstrap {
                             version, filename
                         );
                     });
-                    LOGGER.info("  Applied migration {}: {}", version, filename);
+                    LOGGER.at(Level.INFO).log("  Applied migration %d: %s", version, filename);
                     applied++;
                 } else {
-                    LOGGER.warn("  Migration file not found: {}", filename);
+                    LOGGER.at(Level.WARNING).log("  Migration file not found: %s", filename);
                 }
             }
         }
 
         if (applied > 0) {
-            LOGGER.info("Database migrations complete — {} new migrations applied.", applied);
+            LOGGER.at(Level.INFO).log("Database migrations complete — %d new migrations applied.", applied);
         } else {
-            LOGGER.info("Database is up to date — no new migrations.");
+            LOGGER.at(Level.INFO).log("Database is up to date — no new migrations.");
         }
     }
 
@@ -114,7 +115,7 @@ public class DatabaseBootstrap {
                 return reader.lines().collect(Collectors.joining("\n"));
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to load migration {}: {}", filename, e.getMessage());
+            LOGGER.at(Level.SEVERE).withCause(e).log("Failed to load migration %s", filename);
             return null;
         }
     }

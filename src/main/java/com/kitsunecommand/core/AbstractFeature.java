@@ -1,7 +1,9 @@
 package com.kitsunecommand.core;
 
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.kitsunecommand.data.repositories.SettingsRepository;
+
+import java.util.logging.Level;
 
 /**
  * Base class for all KitsuneCommand features.

@@ -1,7 +1,7 @@
 package com.kitsunecommand.features.economy;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.modules.entity.damage.event.KillFeedEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.kitsunecommand.KitsunePlugin;
@@ -13,6 +13,11 @@ import com.kitsunecommand.data.repositories.SettingsRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 /**
  * Points economy feature.
@@ -31,6 +36,7 @@ public class PointsFeature extends AbstractFeature {
     private final LivePlayerManager livePlayerManager;
 
     private PointsSettings settings;
+    private ScheduledExecutorService scheduler;
 
     @Inject
     public PointsFeature(
@@ -56,7 +62,7 @@ public class PointsFeature extends AbstractFeature {
                 KillFeedEvent.KillerMessage.class,
                 this::onKill
             );
-            LOGGER.info("  Kill tracking enabled (reward: {} points)", settings.getKillReward());
+            LOGGER.at(Level.INFO).log("  Kill tracking enabled (reward: %d points)", settings.getKillReward());
         }
 
         // Register player connect for auto-creation of points records
@@ -65,22 +71,39 @@ public class PointsFeature extends AbstractFeature {
             this::onPlayerConnect
         );
 
-        LOGGER.info("Points feature enabled — signIn={}, playtime={}, kills={}",
+        LOGGER.at(Level.INFO).log("Points feature enabled — signIn=%s, playtime=%s, kills=%s",
             settings.isSignInEnabled(), settings.isPlaytimeTrackingEnabled(), settings.isKillTrackingEnabled());
     }
 
     @Override
     public void onStart() {
-        // Schedule playtime rewards using Hytale's task registry
+        // Schedule playtime rewards using a ScheduledExecutorService + Hytale's TaskRegistry
         if (settings.isPlaytimeTrackingEnabled()) {
-            int intervalTicks = settings.getPlaytimeIntervalMinutes() * 60 * 20; // minutes → ticks
-            plugin.getTaskRegistry().scheduleRepeating(
-                this::awardPlaytimePoints,
-                intervalTicks,
-                intervalTicks
-            );
-            LOGGER.info("Playtime rewards scheduled — {} points every {} minutes",
-                settings.getPlaytimeReward(), settings.getPlaytimeIntervalMinutes());
+            int intervalMinutes = settings.getPlaytimeIntervalMinutes();
+            scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "KitsuneCommand-PlaytimeRewards");
+                t.setDaemon(true);
+                return t;
+            });
+
+            @SuppressWarnings("unchecked")
+            ScheduledFuture<Void> future = (ScheduledFuture<Void>) (ScheduledFuture<?>)
+                scheduler.scheduleAtFixedRate(
+                    this::awardPlaytimePoints,
+                    intervalMinutes, intervalMinutes, TimeUnit.MINUTES
+                );
+
+            plugin.getTaskRegistry().registerTask(future);
+
+            LOGGER.at(Level.INFO).log("Playtime rewards scheduled — %d points every %d minutes",
+                settings.getPlaytimeReward(), intervalMinutes);
+        }
+    }
+
+    @Override
+    public void onShutdown() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
         }
     }
 
@@ -91,8 +114,11 @@ public class PointsFeature extends AbstractFeature {
      */
     private void onPlayerConnect(PlayerConnectEvent event) {
         try {
-            String playerId = event.getPlayer().getUuid().toString();
-            String playerName = event.getPlayer().getName();
+            var playerRef = event.getPlayerRef();
+            if (playerRef == null) return;
+
+            String playerId = playerRef.getUuid().toString();
+            String playerName = playerRef.getUsername();
 
             // Create record if it doesn't exist
             pointsRepo.create(playerId, playerName);
@@ -100,7 +126,7 @@ public class PointsFeature extends AbstractFeature {
             // Update name in case it changed
             pointsRepo.updatePlayerName(playerId, playerName);
         } catch (Exception e) {
-            LOGGER.error("Failed to handle player connect for points: {}", e.getMessage());
+            LOGGER.at(Level.SEVERE).withCause(e).log("Failed to handle player connect for points");
         }
     }
 
@@ -119,7 +145,7 @@ public class PointsFeature extends AbstractFeature {
             // Placeholder: award points to killer if they're tracked in LivePlayerManager
             // The actual implementation will resolve the player UUID from the Damage/ECS system
         } catch (Exception e) {
-            LOGGER.error("Failed to award kill points: {}", e.getMessage());
+            LOGGER.at(Level.SEVERE).withCause(e).log("Failed to award kill points");
         }
     }
 
@@ -138,10 +164,10 @@ public class PointsFeature extends AbstractFeature {
             }
 
             if (count > 0) {
-                LOGGER.debug("Awarded {} playtime points to {} players", reward, count);
+                LOGGER.at(Level.FINE).log("Awarded %d playtime points to %d players", reward, count);
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to award playtime points: {}", e.getMessage());
+            LOGGER.at(Level.SEVERE).withCause(e).log("Failed to award playtime points");
         }
     }
 
@@ -170,7 +196,7 @@ public class PointsFeature extends AbstractFeature {
                 }
             } catch (Exception e) {
                 // If parsing fails, allow sign-in
-                LOGGER.debug("Could not parse last sign-in date for {}: {}", playerId, e.getMessage());
+                LOGGER.at(Level.FINE).log("Could not parse last sign-in date for %s: %s", playerId, e.getMessage());
             }
         }
 

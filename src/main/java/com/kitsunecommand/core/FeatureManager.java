@@ -1,7 +1,7 @@
 package com.kitsunecommand.core;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.kitsunecommand.data.repositories.SettingsRepository;
 import com.kitsunecommand.features.economy.PointsFeature;
 
@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 
 /**
  * Manages the lifecycle of all KitsuneCommand features.
@@ -42,7 +43,7 @@ public class FeatureManager {
         // register(eventVoteFeature);
         // register(taskScheduleFeature);
 
-        LOGGER.info("Registered {} features", features.size());
+        LOGGER.at(Level.INFO).log("Registered %d features", features.size());
     }
 
     /**
@@ -55,13 +56,13 @@ public class FeatureManager {
         if (feature.isEnabled()) {
             try {
                 feature.onEnable();
-                LOGGER.info("  [+] {} enabled", feature.getDisplayName());
+                LOGGER.at(Level.INFO).log("  [+] %s enabled", feature.getDisplayName());
             } catch (Exception e) {
                 feature.setEnabled(false);
-                LOGGER.error("  [!] {} failed to enable: {}", feature.getDisplayName(), e.getMessage());
+                LOGGER.at(Level.SEVERE).withCause(e).log("  [!] %s failed to enable", feature.getDisplayName());
             }
         } else {
-            LOGGER.info("  [-] {} disabled", feature.getDisplayName());
+            LOGGER.at(Level.INFO).log("  [-] %s disabled", feature.getDisplayName());
         }
     }
 
@@ -74,7 +75,7 @@ public class FeatureManager {
                 try {
                     feature.onStart();
                 } catch (Exception e) {
-                    LOGGER.error("Feature {} failed to start: {}", feature.getDisplayName(), e.getMessage());
+                    LOGGER.at(Level.SEVERE).withCause(e).log("Feature %s failed to start", feature.getDisplayName());
                 }
             }
         }
@@ -89,7 +90,7 @@ public class FeatureManager {
                 try {
                     feature.onShutdown();
                 } catch (Exception e) {
-                    LOGGER.error("Feature {} failed to shutdown: {}", feature.getDisplayName(), e.getMessage());
+                    LOGGER.at(Level.SEVERE).withCause(e).log("Feature %s failed to shutdown", feature.getDisplayName());
                 }
             }
         }

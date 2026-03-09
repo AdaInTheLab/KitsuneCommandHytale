@@ -1,12 +1,13 @@
 package com.kitsunecommand.data.repositories;
 
 import com.google.inject.Inject;
-import com.hypixel.hytale.server.core.logging.HytaleLogger;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.kitsunecommand.data.entities.PointsInfo;
 import org.jdbi.v3.core.Jdbi;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 
 /**
  * Data access for the points_info table.
