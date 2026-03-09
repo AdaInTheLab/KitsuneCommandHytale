@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.3.2'
+}
+
+group = 'com.kitsunecommand'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Hytale Server JAR (compileOnly — provided at runtime by the server)
+    compileOnly files('libs/HytaleServer.jar')
+
+    // Dependency Injection
+    implementation 'com.google.inject:guice:7.0.0'
+
+    // Database: SQLite + Connection Pool + SQL Mapper
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+    implementation 'org.jdbi:jdbi3-core:3.45.0'
+    implementation 'org.jdbi:jdbi3-sqlobject:3.45.0'
+
+    // Embedded Web Server (Phase 3 — included now for shadow config)
+    implementation 'io.javalin:javalin:6.4.0'
+
+    // JWT Authentication (Phase 3)
+    implementation 'com.auth0:java-jwt:4.4.0'
+
+    // JSON
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Logging bridge (SLF4J required by HikariCP/Javalin)
+    implementation 'org.slf4j:slf4j-jdk14:2.0.12'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveClassifier.set('')
+
+    // Relocate to avoid classpath conflicts with other plugins
+    relocate 'com.google.inject', 'com.kitsunecommand.libs.guice'
+    relocate 'com.google.gson', 'com.kitsunecommand.libs.gson'
+    relocate 'com.zaxxer.hikari', 'com.kitsunecommand.libs.hikari'
+    relocate 'org.jdbi', 'com.kitsunecommand.libs.jdbi'
+    relocate 'io.javalin', 'com.kitsunecommand.libs.javalin'
+    relocate 'com.auth0.jwt', 'com.kitsunecommand.libs.jwt'
+    relocate 'org.xerial', 'com.kitsunecommand.libs.xerial'
+    relocate 'org.sqlite', 'com.kitsunecommand.libs.sqlite'
+}
+
+tasks.named('build') {
+    dependsOn shadowJar
+}
+
+processResources {
+    filesMatching('manifest.json') {
+        expand(
+            'version': project.version,
+            'name': project.name
+        )
+    }
+}

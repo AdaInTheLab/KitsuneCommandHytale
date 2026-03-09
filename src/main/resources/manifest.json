@@ -1,0 +1,14 @@
+{
+    "Group": "KitsuneCommand",
+    "Name": "KitsuneCommand",
+    "Version": "${version}",
+    "Description": "Server management and economy plugin for Hytale — points, teleport, shop, tickets, and web panel",
+    "Main": "com.kitsunecommand.KitsunePlugin",
+    "Authors": [
+        {
+            "Name": "AdaInTheLab",
+            "Url": "https://github.com/AdaInTheLab"
+        }
+    ],
+    "ServerVersion": ">=1.0.0"
+}
